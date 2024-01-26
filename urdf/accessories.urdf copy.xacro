@@ -1,0 +1,85 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Macros to generate standoffs for offset payload mounting. -->
+  <xacro:include filename="$(find tb_kobuki_description)/urdf/stacks/hexagons.urdf.xacro" />
+
+  <!--
+    Add a payload.  By default this is a hexagon stack but can be changed with the
+    KOBUKI_STACKS environment variable. Valid model designations are:
+    - 1                   :: Hexagon stack
+    - 0 (default)         :: No stack
+  -->
+  
+  <xacro:if value="$(optenv KOBUKI_STACKS 0)">
+    <xacro:stack_hexagons parent="base_link" />
+  </xacro:if>
+
+  <!-- 2D Lidars -->
+  <xacro:include filename="$(find tb_kobuki_description)/urdf/sensors/hokuyo_ust10.urdf.xacro" />
+  
+  <!--
+    Add 2D lidar sensors.  By default these are Hokuyo ust10
+    Valid model designations are:
+    - ust10            :: Hokuyo UST10
+  -->
+
+  <!-- Primary 2D Lidar -->
+  <xacro:if value="$(optenv KOBUKI_LASER 0)">
+    <xacro:property name="mount" value="$(optenv KOBUKI_LASER_MOUNT bottom)" />
+    <xacro:property name="topic" value="$(optenv KOBUKI_LASER_TOPIC bottom/scan)" />
+    <xacro:property name="prefix" value="$(optenv KOBUKI_LASER_PREFIX ${mount})" />
+    <xacro:property name="parent" value="$(optenv KOBUKI_LASER_PARENT plate_${mount}_link)" />
+    <xacro:hokuyo_ust10_mount topic="${topic}" prefix="${prefix}" parent_link="${parent}">
+      <origin xyz="$(optenv KOBUKI_LASER_OFFSET 0 0 0)" rpy="$(optenv KOBUKI_LASER_RPY 0 0 0)" />
+    </xacro:hokuyo_ust10_mount>
+  </xacro:if>
+
+  <!--
+    Add a 3D lidar sensor.  By default this is a Velodyne VLP16 but can be changed with the
+    KOBUKI_LASER_3D_MODEL environment variable. Valid model designations are:
+    - vlp16 (default)  :: Velodyne VLP16
+    - vlp32e           :: Velodyne HDL-32E
+  -->
+
+  <xacro:if value="$(optenv KOBUKI_LASER_3D 0)">
+    <xacro:property name="mount" value="$(optenv KOBUKI_LASER_3D_MOUNT mid)" />
+    <xacro:property name="topic" value="$(optenv KOBUKI_LASER_3D_TOPIC mid/points)" />
+    <xacro:property name="prefix" value="$(optenv KOBUKI_LASER_3D_PREFIX ${mount})" />
+    <xacro:property name="parent" value="$(optenv KOBUKI_LASER_3D_PARENT plate_${mount}_link)" />
+    <xacro:property name="lidar_3d_model" value="$(optenv KOBUKI_LASER_3D_MODEL vlp16)" />
+    <!-- Velodyne VLP16 -->
+    <xacro:if value="${lidar_3d_model == 'vlp16'}">
+      <xacro:vlp16_mount topic="${topic}" tower="${tower}" prefix="${prefix}" parent_link="${parent}">
+        <origin xyz="$(optenv KOBUKI_LASER_3D_OFFSET 0 0 0)" rpy="$(optenv KOBUKI_LASER_3D_RPY 0 0 0)" />
+      </xacro:vlp16_mount>
+    </xacro:if>
+    <!-- Velodyne HDL-32E -->
+    <xacro:if value="${lidar_3d_model == 'hdl32e'}">
+      <xacro:hdl32e_mount topic="${topic}" tower="${tower}" prefix="${prefix}" parent_link="${parent}">
+        <origin xyz="$(optenv KOBUKI_LASER_3D_OFFSET 0 0 0)" rpy="$(optenv KOBUKI_LASER_3D_RPY 0 0 0)" />
+      </xacro:hdl32e_mount>
+    </xacro:if>
+  </xacro:if>
+
+  <!-- 
+    Add Cameras. 
+    - KOBUKI_D435
+  -->
+
+  <!-- If enabled, generate the d435 camera payload. -->
+  <xacro:property name="d435" value="$(optenv KOBUKI_D435 0)" />
+  <xacro:property name="d435_stereo" value="$(optenv KOBUKI_D435_STEREO 0)" />
+  <xacro:if value="${d435 or d435_stereo}">
+    <xacro:property name="name" value="$(optenv KOBUKI_D435_NAME top)" />
+    <xacro:property name="mount" value="$(optenv KOBUKI_D435_MOUNT top)" />
+    <xacro:property name="camera_xyz" default="$(optenv KOBUKI_D435_XYZ 0.042 0.0 0.0)" />
+    <xacro:property name="camera_rpy" default="$(optenv KOBUKI_D435_RPY 0.0 0.0 0.0)" />
+    <xacro:property name="prefix" value="$(optenv KOBUKI_D435_PREFIX ${mount})" />
+    <xacro:property name="parent" value="$(optenv KOBUKI_D435_PARENT plate_${mount}_link)" />
+    <xacro:property name="camera_frame_id" value="$(optenv KOBUKI_D435_FRAME camera_color_frame)" />
+    <xacro:property name="stereo_camera_frame_id" value="$(optenv KOBUKI_D435_STEREO_FRAME camera_infra1_frame)" />   
+    <xacro:include filename="$(find tb_kobuki_description)/urdf/sensors/d435.urdf.xacro" />
+  </xacro:if>
+
+</robot>
